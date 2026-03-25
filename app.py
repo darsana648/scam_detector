@@ -12,27 +12,28 @@ def detect_scam(text):
     # 1. Authority words
     authority_words = ["rto", "bank", "government", "police", "morth", "court"]
     if any(word in text_lower for word in authority_words):
-        score += 15
-        reasons.append("Claims to be from authority")
+        score += 10
+        reasons.append("Mentions authority")
 
     # 2. Suspicious urgency
     urgency_words = ["urgent", "immediately", "action", "pay now", "click"]
     if any(word in text_lower for word in urgency_words):
-        score += 20
+        score += 15
         reasons.append("Creates urgency")
 
-    # 3. Link detection
+    # 3. Link detection (IMPROVED 🔥)
     links = re.findall(r'https?://\S+', text)
-    if links:
-        score += 20
-        reasons.append("Contains link")
+    trusted_domains = ["parivahan.gov.in", "vcourts.gov.in"]
 
+    if links:
         for link in links:
             domain = urlparse(link).netloc
-            trusted_domains = ["parivahan.gov.in", "vcourts.gov.in"]
 
-            if not any(domain.endswith(td) for td in trusted_domains):
-                score += 25
+            if any(domain.endswith(td) for td in trusted_domains):
+                score -= 25  # ✅ trusted domain reduces risk
+                reasons.append(f"Trusted domain: {domain}")
+            else:
+                score += 40  # ❌ unknown domain increases risk
                 reasons.append(f"Untrusted domain: {domain}")
 
     # 4. Money mention
@@ -40,18 +41,25 @@ def detect_scam(text):
         score += 10
         reasons.append("Mentions payment")
 
-    # 5. Vehicle + challan pattern
+    # 5. Vehicle + challan pattern (SMART CHECK 🔥)
     if "vehicle" in text_lower and "challan" in text_lower:
-        score += 15
-        reasons.append("Vehicle/challan related message")
+        score += 10
+        reasons.append("Challan-related message")
+
+        # Extra safety check
+        if "parivahan" in text_lower:
+            score -= 15
+            reasons.append("Matches official traffic format")
 
     # 6. Suspicious formatting
     if text.count(".") > 5 or text.count(":") > 3:
-        score += 10
-        reasons.append("Unusual formatting pattern")
+        score += 5
+        reasons.append("Unusual formatting")
 
-    score = min(score, 100)
+    # Ensure score stays between 0–100
+    score = max(0, min(score, 100))
 
+    # Final decision
     if score > 60:
         result = "⚠️ Likely Scam"
     elif score > 35:
@@ -60,7 +68,6 @@ def detect_scam(text):
         result = "✅ Seems Safe"
 
     return result, score, reasons
-
 
 @app.route("/", methods=["GET", "POST"])
 def home():
