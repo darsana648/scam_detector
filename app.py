@@ -1,5 +1,8 @@
+from flask import Flask, render_template, request
 import re
 from urllib.parse import urlparse
+
+app = Flask(__name__)
 
 def detect_scam(text):
     score = 0
@@ -18,7 +21,7 @@ def detect_scam(text):
         score += 20
         reasons.append("Creates urgency")
 
-    # 3. Link detection (IMPROVED)
+    # 3. Link detection
     links = re.findall(r'https?://\S+', text)
     if links:
         score += 20
@@ -26,8 +29,6 @@ def detect_scam(text):
 
         for link in links:
             domain = urlparse(link).netloc
-
-            # Trusted domains
             trusted_domains = ["parivahan.gov.in", "vcourts.gov.in"]
 
             if not any(domain.endswith(td) for td in trusted_domains):
@@ -44,15 +45,13 @@ def detect_scam(text):
         score += 15
         reasons.append("Vehicle/challan related message")
 
-    # 6. Suspicious formatting (NEW 🔥)
+    # 6. Suspicious formatting
     if text.count(".") > 5 or text.count(":") > 3:
         score += 10
         reasons.append("Unusual formatting pattern")
 
-    # Normalize score to 100
     score = min(score, 100)
 
-    # Final decision
     if score > 60:
         result = "⚠️ Likely Scam"
     elif score > 35:
@@ -61,3 +60,20 @@ def detect_scam(text):
         result = "✅ Seems Safe"
 
     return result, score, reasons
+
+
+@app.route("/", methods=["GET", "POST"])
+def home():
+    result = None
+    score = None
+    reasons = []
+
+    if request.method == "POST":
+        text = request.form["message"]
+        result, score, reasons = detect_scam(text)
+
+    return render_template("index.html", result=result, score=score, reasons=reasons)
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
