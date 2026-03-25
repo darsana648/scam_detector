@@ -2,6 +2,8 @@ from flask import Flask, render_template, request
 import re
 from urllib.parse import urlparse
 from model import predict_message
+import os
+
 
 app = Flask(__name__)
 
@@ -94,7 +96,6 @@ def detect_scam(text):
 
     return result, score, reasons
 
-
 @app.route("/", methods=["GET", "POST"])
 def home():
     result = None
@@ -107,16 +108,17 @@ def home():
 
         ml_result = predict_message(text)
 
-# Combine both
+        # Combine both
         if ml_result == 1:
-           result = "⚠️ Likely Scam (ML Detected)"
+            result = "⚠️ Likely Scam (ML Detected)"
         elif score > 60:
-           result = rule_result
+            result = rule_result
         else:
-           result = "✅ Seems Safe"
+            result = "✅ Seems Safe"
 
     return render_template("index.html", result=result, score=score, reasons=reasons)
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))  # Use Render's assigned port
+    app.run(host="0.0.0.0", port=port)
