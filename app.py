@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request
 import re
 from urllib.parse import urlparse
+from model import predict_message
 
 app = Flask(__name__)
 
@@ -102,7 +103,17 @@ def home():
 
     if request.method == "POST":
         text = request.form["message"]
-        result, score, reasons = detect_scam(text)
+        rule_result, score, reasons = detect_scam(text)
+
+        ml_result = predict_message(text)
+
+# Combine both
+        if ml_result == 1:
+           result = "⚠️ Likely Scam (ML Detected)"
+        elif score > 60:
+           result = rule_result
+        else:
+           result = "✅ Seems Safe"
 
     return render_template("index.html", result=result, score=score, reasons=reasons)
 
