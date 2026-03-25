@@ -4,28 +4,71 @@
     <title>AI Scam Detector</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 flex justify-center items-center h-screen">
 
-<div class="bg-white p-6 rounded-lg shadow-lg w-96">
-    <h2 class="text-xl font-bold mb-4 text-center">AI Scam Detector</h2>
+<body class="bg-gray-900 flex justify-center items-center min-h-screen text-white">
 
+<div class="bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-md">
+
+    <!-- Title -->
+    <h2 class="text-2xl font-bold mb-6 text-center text-blue-400">
+        🚨 AI Scam Detector
+    </h2>
+
+    <!-- Form -->
     <form method="POST">
-        <textarea name="message" class="w-full border p-2 mb-4" placeholder="Paste message here..." required></textarea>
-        <button class="bg-blue-500 text-white px-4 py-2 w-full rounded">Check</button>
+        <textarea name="message"
+            class="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg mb-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Paste message here..." required></textarea>
+
+        <button
+            class="bg-blue-600 hover:bg-blue-700 transition duration-200 text-white px-4 py-2 w-full rounded-lg font-semibold">
+            🔍 Analyze Message
+        </button>
     </form>
 
+    <!-- Result Section -->
     {% if result %}
-    <div class="mt-4">
-        <h3 class="font-bold">{{ result }}</h3>
-        <p>Confidence: {{ score }}%</p>
+    <div class="mt-6 p-4 rounded-lg 
+        {% if 'Scam' in result %}
+            bg-red-900
+        {% elif 'Suspicious' in result %}
+            bg-yellow-800
+        {% else %}
+            bg-green-800
+        {% endif %}
+    ">
 
-        <ul class="text-sm mt-2">
+        <!-- Result -->
+        <h3 class="font-bold text-lg mb-2">
+            {{ result }}
+        </h3>
+
+        <!-- Confidence -->
+        <p class="mb-2">Confidence: {{ score }}%</p>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-gray-700 rounded-full h-3 mb-3">
+            <div class="h-3 rounded-full 
+                {% if score > 60 %}
+                    bg-red-500
+                {% elif score > 35 %}
+                    bg-yellow-400
+                {% else %}
+                    bg-green-500
+                {% endif %}
+            "
+            style="width: {{ score }}%"></div>
+        </div>
+
+        <!-- Reasons -->
+        <ul class="text-sm space-y-1">
             {% for r in reasons %}
             <li>• {{ r }}</li>
             {% endfor %}
         </ul>
     </div>
     {% endif %}
+
 </div>
 
 </body>
