@@ -16,47 +16,71 @@ def detect_scam(text):
         reasons.append("Mentions authority")
 
     # 2. Suspicious urgency
-    urgency_words = ["urgent", "immediately", "action", "pay now", "click"]
+    urgency_words = [
+        "urgent", "immediately", "action", "pay now", "click",
+        "blocked", "suspended", "verify", "within", "limited time"
+    ]
     if any(word in text_lower for word in urgency_words):
         score += 15
         reasons.append("Creates urgency")
 
-    # 3. Link detection (IMPROVED 🔥)
+    # 3. Account/security context
+    security_words = ["account", "login", "security", "password", "verify"]
+    if any(word in text_lower for word in security_words):
+        score += 10
+        reasons.append("Account/security related")
+
+    # 4. Link detection (ADVANCED 🔥)
     links = re.findall(r'https?://\S+', text)
-    trusted_domains = ["parivahan.gov.in", "vcourts.gov.in"]
 
     if links:
         for link in links:
-            domain = urlparse(link).netloc
+            domain = urlparse(link).netloc.lower()
 
-            if any(domain.endswith(td) for td in trusted_domains):
-                score -= 25  # ✅ trusted domain reduces risk
-                reasons.append(f"Trusted domain: {domain}")
+            # 🟢 HIGH TRUST (government)
+            if domain.endswith("gov.in") or domain.endswith("nic.in"):
+                score -= 40
+                reasons.append(f"Government domain: {domain}")
+
+            # 🟡 MEDIUM TRUST (brands - flexible)
+            elif any(brand in domain for brand in [
+                "amazon", "flipkart", "myntra", "meesho", "ajio", "nykaa",
+                "sbi", "hdfc", "icici", "axis", "kotak",
+                "google", "microsoft", "apple"
+            ]):
+                score -= 15
+                reasons.append(f"Recognized brand: {domain}")
+
+            # 🔴 SUSPICIOUS structure
+            elif "-" in domain or "@" in domain or domain.count('.') > 3:
+                score += 40
+                reasons.append(f"Suspicious domain structure: {domain}")
+
+            # ⚠️ UNKNOWN domain
             else:
-                score += 40  # ❌ unknown domain increases risk
-                reasons.append(f"Untrusted domain: {domain}")
+                score += 25
+                reasons.append(f"Unknown domain: {domain}")
 
-    # 4. Money mention
+    # 5. Money mention
     if "rs" in text_lower or "₹" in text_lower:
         score += 10
         reasons.append("Mentions payment")
 
-    # 5. Vehicle + challan pattern (SMART CHECK 🔥)
+    # 6. Vehicle + challan pattern
     if "vehicle" in text_lower and "challan" in text_lower:
         score += 10
         reasons.append("Challan-related message")
 
-        # Extra safety check
         if "parivahan" in text_lower:
             score -= 15
             reasons.append("Matches official traffic format")
 
-    # 6. Suspicious formatting
+    # 7. Suspicious formatting
     if text.count(".") > 5 or text.count(":") > 3:
         score += 5
         reasons.append("Unusual formatting")
 
-    # Ensure score stays between 0–100
+    # Normalize score
     score = max(0, min(score, 100))
 
     # Final decision
@@ -68,6 +92,7 @@ def detect_scam(text):
         result = "✅ Seems Safe"
 
     return result, score, reasons
+
 
 @app.route("/", methods=["GET", "POST"])
 def home():
